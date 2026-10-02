@@ -145,7 +145,7 @@ $config['users_table'] = 'users';
 | a browser, so set your real domain in production.
 |
 */
-$config['allow_origin'] = array_values(array_unique([getenv('FRONTEND_URL') ?: 'http://localhost:5173', 'http://localhost:5173', 'http://127.0.0.1:5173', 'https://api-tester.marasigan.dev']));
+$config['allow_origin'] = array_values(array_unique([getenv('FRONTEND_URL') ?: 'https://productfrontend-pzbl.onrender.com', 'http://localhost:5173', 'http://127.0.0.1:5173', 'https://api-tester.marasigan.dev']));
 
 /*
 |--------------------------------------------------------------------------
