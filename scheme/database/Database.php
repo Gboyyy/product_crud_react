@@ -268,6 +268,11 @@ class Database {
             PDO::ATTR_EMULATE_PREPARES   => false,
         );
 
+        // Optional verified TLS for hosted MySQL (including Aiven).
+        if ($driver === 'mysql' && !empty($database_config['ssl_ca'])) {
+            $options[PDO::MYSQL_ATTR_SSL_CA] = $database_config['ssl_ca'];
+            $options[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = true;
+        }
         try {
             $this->db = new PDO($dsn, $username, $password, $options);
             $this->driver = $this->db->getAttribute(PDO::ATTR_DRIVER_NAME);
@@ -363,7 +368,7 @@ class Database {
      * @param  array  $args  arguments
      * @return mixed
      */
-    public function raw($query, $args = array())
+    public function raw($query, $args = array(), $throw_errors = false)
     {
         $this->reset_query();
         $query = trim($query);
@@ -387,6 +392,7 @@ class Database {
             }
             return $stmt;
         } catch (Exception $e) {
+            if ($throw_errors) throw $e;
             $error = load_class('Errors', 'kernel');
             $error->show_database_error(
                 $e->getMessage(),

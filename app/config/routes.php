@@ -1,47 +1,32 @@
 <?php
-defined('PREVENT_DIRECT_ACCESS') OR exit('No direct script access allowed');
-/**
- * ------------------------------------------------------------------
- * LavaLust - an opensource lightweight PHP MVC Framework
- * ------------------------------------------------------------------
- *
- * MIT License
- *
- * Copyright (c) 2020 Ronald M. Marasigan
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- *
- * @package LavaLust
- * @author Ronald M. Marasigan <ronald.marasigan@yahoo.com>
- * @since Version 1
- * @link https://github.com/ronmarasigan/LavaLust
- * @license https://opensource.org/licenses/MIT MIT License
- */
-
-/*
-| -------------------------------------------------------------------
-| URI ROUTING
-| -------------------------------------------------------------------
-| Here is where you can register web routes for your application.
-|
-|
-*/
-/** @var object $router **/
-
-$router->get('/', 'Welcome::index');
+ defined('PREVENT_DIRECT_ACCESS') OR exit('No direct script access allowed');
+load_class('config', 'kernel')->load('middleware');
+// OPTIONS requests are handled by the router before controllers load API config.
+load_class('config', 'kernel')->load('api');
+$router->get('/', 'Productcontroller::health');
+$router->get('api/health', 'Productcontroller::health');
+// Compatibility with the API tester's authentication paths.
+$router->post('api/create','Productcontroller::register');
+$router->post('api/login','Productcontroller::login');
+$router->post('api/logout','Productcontroller::logout')->middleware('auth');
+$router->get('api/me','Productcontroller::me')->middleware('auth');
+$router->get('api/profile','Productcontroller::me')->middleware('auth');
+foreach (['register','login','logout'] as $action) {
+ $router->post('api/auth/'.$action,'Productcontroller::'.$action);
+ if ($action==='logout') $router->middleware('auth');
+ $router->options('api/auth/'.$action,'Productcontroller::preflight');
+}
+$router->get('api/auth/me','Productcontroller::me')->middleware('auth');
+$router->options('api/auth/me','Productcontroller::preflight');
+$router->get('api/products','Productcontroller::index')->middleware('auth');
+$router->post('api/products','Productcontroller::create')->middleware(['auth','admin']);
+$router->options('api/products','Productcontroller::preflight');
+$router->get('api/products/{id}','Productcontroller::show')->middleware('auth');
+$router->put('api/products/{id}','Productcontroller::update')->middleware(['auth','admin']);
+$router->patch('api/products/{id}','Productcontroller::update')->middleware(['auth','admin']);
+$router->delete('api/products/{id}','Productcontroller::delete')->middleware(['auth','admin']);
+$router->options('api/products/{id}','Productcontroller::preflight');
+if (PHP_SAPI==='cli') {
+ $router->get('create-migration/{migration_class}','MigrationController::create_migration');
+ foreach (['migrate','rollback','rollback-all','refresh','status'] as $action) $router->get($action,'MigrationController::'.str_replace('-','_',$action));
+}
