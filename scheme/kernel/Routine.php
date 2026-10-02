@@ -191,11 +191,8 @@ if ( ! function_exists('_exception_handler'))
 			$logger = load_class('logger', 'kernel');
 			$logger->log('error', get_class($e), $e->getMessage(), $e->getFile(), $e->getLine());
 		}
-		if(strtolower(config_item('environment') == 'development'))
-		{
-			$exception = load_class('Errors', 'kernel');
-			$exception->show_exception($e);
-		}
+		$exception = load_class('Errors', 'kernel');
+		$exception->show_exception($e);
 		
 	}
 }

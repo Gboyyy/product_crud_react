@@ -42,6 +42,21 @@ defined('PREVENT_DIRECT_ACCESS') OR exit('No direct script access allowed');
  */
 class Errors
 {
+	private function respond_api_error($code)
+	{
+		$is_api = false;
+		foreach (headers_list() as $header) {
+			if (stripos($header, 'Content-Type: application/json') === 0) $is_api = true;
+		}
+		if (!$is_api) return;
+		http_response_code($code);
+		header('Content-Type: application/json; charset=utf-8');
+		header('Cache-Control: no-store');
+		echo json_encode(['error' => $code >= 500
+			? 'The server could not complete the request. Please try again later.'
+			: 'The requested API endpoint was not found.', 'status' => $code]);
+		exit();
+	}
 	/**
 	 * Show 404 Page Not Found
 	 *
@@ -69,6 +84,7 @@ class Errors
 	 */
 	public function show_error($heading, $message, $template, $code = 500)
 	{
+		$this->respond_api_error($code);
 		$template_path = config_item('error_view_path');
 		if (empty($template_path))
 		{
@@ -88,6 +104,12 @@ class Errors
 	 */
 	public function show_exception($exception)
 	{
+		error_log('Unhandled exception: ' . $exception->getMessage() . ' in ' . $exception->getFile() . ':' . $exception->getLine());
+		$this->respond_api_error(500);
+		http_response_code(500);
+		if (strtolower(config_item('environment')) !== 'development') {
+			exit('The server could not complete the request.');
+		}
 		$template_path = config_item('error_view_path');
 		if (empty($template_path))
 		{
@@ -115,6 +137,9 @@ class Errors
 	 */
 	public function show_php_error($severity, $message, $filepath, $line)
 	{
+		error_log('PHP error: ' . $message . ' in ' . $filepath . ':' . $line);
+		$this->respond_api_error(500);
+		http_response_code(500);
 		$template_path = config_item('error_view_path');
 		if (empty($template_path))
 		{
@@ -136,6 +161,7 @@ class Errors
 	 */
 	public function show_database_error($message, $sql = '', $bindings = [], $exception = null, $template = 'error_db')
 	{
+		$this->respond_api_error(500);
 		http_response_code(500);
 		
 		if (config_item('environment') !== 'development') {
